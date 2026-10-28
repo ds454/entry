@@ -14,7 +14,7 @@ COPY        start.sh /start.sh
 RUN         chmod +x /start.sh
 
 # Copy the config
-COPY        envoy.yaml.template /envoy.yaml.template
+COPY        envoy.yaml /envoy.yaml.template
 
 # Make our start script the entrypoint
 ENTRYPOINT  ["/start.sh"]
