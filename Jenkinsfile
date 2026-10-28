@@ -7,7 +7,7 @@ pipeline {
         spec:
           containers:
           - name: buildkit
-            image: moby/buildkit:v0.31.0
+            image: moby/buildkit:v0.34.1
             securityContext:
               privileged: true
       '''
