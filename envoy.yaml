@@ -110,7 +110,7 @@ static_resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
-          http2_protocol_options: {}   # gRPC needs HTTP/2 to the upstream
+          http2_protocol_options: {}
     load_assignment:
       cluster_name: auth_service
       endpoints:
