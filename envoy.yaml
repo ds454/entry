@@ -5,6 +5,7 @@ static_resources:
     address:
       socket_address:
         address: 0.0.0.0
+        # Envoy listens on this port
         port_value: ${ENTRY_PORT}
     filter_chains:
     - filters:
@@ -14,7 +15,7 @@ static_resources:
           stat_prefix: grpc_ingress
           codec_type: AUTO
 
-          # Close streams that send nothing for 5 minutes (Envoy's default, made explicit).
+          # Close streams that send nothing for 5 minutes
           stream_idle_timeout: 300s
 
           route_config:
@@ -24,39 +25,48 @@ static_resources:
               domains: ["*"]
               routes:
 
-              # 
+              # Requests to this specific path... 
               - match:
-                  path: "/auth.v1.AuthService/Login"
-                route: &auth_route
+                  path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SERVICE_LOGIN_PATH}"
+                # ...go here...
+                route:
                   cluster: auth_service
                   timeout: 1s
                   max_stream_duration:
                     grpc_timeout_header_max: 0s
+                # ...and skip authentication.
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                     disabled: true
 
+              # Requests to this specific path...
               - match:
-                  path: "/auth.v1.AuthService/Refresh"
-                route: *auth_route
+                  path: "${USER_SERVICE_CONTEXT_PATH}${USER_SERVICE_REGISTER_PATH}"
+                # ...go here...
+                route:
+                  cluster: user_service
+                # ...and skip authentication.
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                     disabled: true
 
-              # --- Everything below requires a valid session -------------------
-              # Logout, ChangePassword, etc. on the auth service itself
+              # Requests starting with this...
               - match:
-                  prefix: ${}
-                route: *auth_route
-
-              # Add one route per backend service here.
-              # Unmatched paths get gRPC status UNIMPLEMENTED (12) from Envoy.
-              # Never route /envoy.service.auth.v3.Authorization/ - Check stays internal.
+                  prefix: ${USER_SERVICE_CONTEXT_PATH}
+                # ...go here.
+                route:
+                  cluster: user_service
+              
+              # Requests starting with this...
+              - match:
+                  prefix: ${GAME_SERVICE_CONTEXT_PATH}
+                # ...go here.
+                route:
+                  cluster: game_service
 
           http_filters:
-          # All requests go through auth first
           - name: envoy.filters.http.ext_authz
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
@@ -73,7 +83,7 @@ static_resources:
                 patterns:
                 - exact: ${AUTH_SESSION_TOKEN_HEADER_KEY}
 
-          # 3. Route to the backend (must be last).
+          # Then they get passed to the backend
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -119,21 +129,13 @@ static_resources:
       # After a pod fails a health check twice, it is considered unhealthy and requests aren't routed to it anymore
       unhealthy_threshold: 2
       healthy_threshold: 1
-      grpc_health_check: {}
+      ${AUTH_SERVICE_HEALTH_METHOD}_health_check: {}
 
   # User Service
   - name: user_service
-
-    # Loadbalances across all pods in service
     type: STRICT_DNS
-
-    # Only use IPv4
     dns_lookup_family: V4_ONLY
-
-    # User doesn't need to be super reactive
     connect_timeout: 5s
-
-    # Send new requests to pods that aren't doing much
     lb_policy: LEAST_REQUEST
 
     # Force HTTP2
@@ -141,7 +143,7 @@ static_resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicit_http_config:
-          http2_protocol_options: {}   # gRPC needs HTTP/2 to the upstream
+          http2_protocol_options: {}
     load_assignment:
       cluster_name: auth_service
       endpoints:
@@ -151,12 +153,38 @@ static_resources:
               socket_address:
                 address: ${USER_SERVICE_HOSTNAME}
                 port_value: ${USER_SERVICE_PORT}
-
-    # Health checks fail after nothing happens after 5 seconds.
     health_checks:
     - timeout: 5s
       interval: ${USER_HEALTH_INTERVAL}
-      # After a pod fails a health check twice, it is considered unhealthy and requests aren't routed to it anymore
       unhealthy_threshold: 2
       healthy_threshold: 1
-      grpc_health_check: {}
+      ${USER_SERVICE_HEALTH_METHOD}_health_check: {}
+
+  # Game Service
+  - name: game_service
+    type: STRICT_DNS
+    dns_lookup_family: V4_ONLY
+    connect_timeout: 5s
+    lb_policy: LEAST_REQUEST
+
+    # Force HTTP2
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: game_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: ${GAME_SERVICE_HOSTNAME}
+                port_value: ${GAME_SERVICE_PORT}
+    health_checks:
+    - timeout: 5s
+      interval: ${GAME_HEALTH_INTERVAL}
+      unhealthy_threshold: 2
+      healthy_threshold: 1
+      ${GAME_SERVICE_HEALTH_METHOD}_health_check: {}
