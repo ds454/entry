@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Errors fail
-set -e
+set -eu
 
 # Check to make sure all required environment variables are set
 : "${ENTRY_PORT:?Required env variable ENTRY_PORT is missing}"
