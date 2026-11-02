@@ -25,28 +25,25 @@ static_resources:
               domains: ["*"]
               routes:
 
-              # Requests to this specific path... 
+              # Logging in skips authentication
               - match:
                   path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SERVICE_LOGIN_PATH}"
-                # ...go here...
                 route:
                   cluster: auth_service
                   timeout: 1s
                   max_stream_duration:
                     grpc_timeout_header_max: 0s
-                # ...and skip authentication.
+                # This skips the authentication step
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                     disabled: true
 
-              # Requests to this specific path...
+              # Registration skips authentication
               - match:
                   path: "${USER_SERVICE_CONTEXT_PATH}${USER_SERVICE_REGISTER_PATH}"
-                # ...go here...
                 route:
                   cluster: user_service
-                # ...and skip authentication.
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
@@ -59,12 +56,15 @@ static_resources:
                 route:
                   cluster: user_service
               
-              # Requests starting with this...
               - match:
                   prefix: ${GAME_SERVICE_CONTEXT_PATH}
-                # ...go here.
                 route:
                   cluster: game_service
+
+              - match:
+                  prefix: ${AUTH_SERVICE_CONTEXT_PATH}
+                route:
+                  cluster: auth_service
 
           http_filters:
           - name: envoy.filters.http.ext_authz
@@ -137,8 +137,6 @@ static_resources:
     dns_lookup_family: V4_ONLY
     connect_timeout: 5s
     lb_policy: LEAST_REQUEST
-
-    # Force HTTP2
     typed_extension_protocol_options:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -166,8 +164,6 @@ static_resources:
     dns_lookup_family: V4_ONLY
     connect_timeout: 5s
     lb_policy: LEAST_REQUEST
-
-    # Force HTTP2
     typed_extension_protocol_options:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
