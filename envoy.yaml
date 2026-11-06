@@ -216,4 +216,4 @@ static_resources:
       interval: ${COMPETITION_SERVICE_HEALTH_INTERVAL}
       unhealthy_threshold: 2
       healthy_threshold: 1
-      ${COMPETITION_HEALTH_METHOD}_health_check: {}
+      ${COMPETITION_SERVICE_HEALTH_METHOD}_health_check: {}
