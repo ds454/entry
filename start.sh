@@ -10,22 +10,28 @@ set -eu
 : "${AUTH_SERVICE_HOSTNAME:?Required env variable AUTH_SERVICE_HOSTNAME is missing}"
 : "${AUTH_SERVICE_PORT:?Required env variable AUTH_SERVICE_PORT is missing}"
 : "${AUTH_SERVICE_LOGIN_PATH:?Required env variable AUTH_SERVICE_LOGIN_PATH is missing}"
-: "${AUTH_HEALTH_INTERVAL:?Required env variable AUTH_HEALTH_INTERVAL is missing}"
-: "${AUTH_SESSION_TOKEN_HEADER_KEY:?Required env variable AUTH_SESSION_TOKEN_HEADER_KEY is missing}"
+: "${AUTH_SERVICE_HEALTH_INTERVAL:?Required env variable AUTH_SERVICE_HEALTH_INTERVAL is missing}"
+: "${AUTH_SERVICE_SESSION_TOKEN_HEADER_KEY:?Required env variable AUTH_SERVICE_SESSION_TOKEN_HEADER_KEY is missing}"
 : "${AUTH_SERVICE_HEALTH_METHOD:?Required env variable AUTH_SERVICE_HEALTH_METHOD is missing}"
 
 : "${USER_SERVICE_CONTEXT_PATH:?Required env variable USER_SERVICE_CONTEXT_PATH is missing}"
 : "${USER_SERVICE_HOSTNAME:?Required env variable USER_SERVICE_HOSTNAME is missing}"
 : "${USER_SERVICE_PORT:?Required env variable USER_SERVICE_PORT is missing}"
 : "${USER_SERVICE_REGISTER_PATH:?Required env variable USER_SERVICE_REGISTER_PATH is missing}"
-: "${USER_HEALTH_INTERVAL:?Required env variable USER_HEALTH_INTERVAL is missing}"
+: "${USER_SERVICE_HEALTH_INTERVAL:?Required env variable USER_SERVICE_HEALTH_INTERVAL is missing}"
 : "${USER_SERVICE_HEALTH_METHOD:?Required env variable USER_SERVICE_HEALTH_METHOD is missing}"
 
 : "${GAME_SERVICE_CONTEXT_PATH:?Required env variable GAME_SERVICE_CONTEXT_PATH is missing}"
 : "${GAME_SERVICE_HOSTNAME:?Required env variable GAME_SERVICE_HOSTNAME is missing}"
 : "${GAME_SERVICE_PORT:?Required env variable GAME_SERVICE_PORT is missing}"
-: "${GAME_HEALTH_INTERVAL:?Required env variable GAME_HEALTH_INTERVAL is missing}"
+: "${GAME_SERVICE_HEALTH_INTERVAL:?Required env variable GAME_SERVICE_HEALTH_INTERVAL is missing}"
 : "${GAME_SERVICE_HEALTH_METHOD:?Required env variable GAME_SERVICE_HEALTH_METHOD is missing}"
+
+: "${COMPETITION_SERVICE_CONTEXT_PATH:?Required env variable COMPETITION_SERVICE_CONTEXT_PATH is missing}"
+: "${COMPETITION_SERVICE_HOSTNAME:?Required env variable COMPETITION_SERVICE_HOSTNAME is missing}"
+: "${COMPETITION_SERVICE_PORT:?Required env variable COMPETITION_SERVICE_PORT is missing}"
+: "${COMPETITION_SERVICE_HEALTH_INTERVAL:?Required env variable COMPETITION_SERVICE_HEALTH_INTERVAL is missing}"
+: "${COMPETITION_SERVICE_HEALTH_METHOD:?Required env variable COMPETITION_SERVICE_HEALTH_METHOD is missing}"
 
 # Remove the defualt config
 rm -f /etc/envoy/envoy.yaml
@@ -37,23 +43,28 @@ envsubst '\
     ${AUTH_SERVICE_HOSTNAME} \
     ${AUTH_SERVICE_PORT} \
     ${AUTH_SERVICE_LOGIN_PATH} \
+    ${AUTH_SERVICE_HEALTH_INTERVAL} \
+    ${AUTH_SERVICE_SESSION_TOKEN_HEADER_KEY} \
     ${AUTH_SERVICE_HEALTH_METHOD} \
-    ${AUTH_HEALTH_INTERVAL} \
-    ${AUTH_SESSION_TOKEN_HEADER_KEY} \
     ${USER_SERVICE_CONTEXT_PATH} \
-    ${USER_SERVICE_REGISTER_PATH} \
     ${USER_SERVICE_HOSTNAME} \
     ${USER_SERVICE_PORT} \
-    ${USER_HEALTH_INTERVAL} \
+    ${USER_SERVICE_REGISTER_PATH} \
+    ${USER_SERVICE_HEALTH_INTERVAL} \
     ${USER_SERVICE_HEALTH_METHOD}
     ${GAME_SERVICE_CONTEXT_PATH} \
     ${GAME_SERVICE_HOSTNAME} \
-    ${GAME_HEALTH_INTERVAL} \
-    ${GAME_SERVICE_HEALTH_METHOD} \
-    ${GAME_SERVICE_PORT}' \
+    ${GAME_SERVICE_PORT} \
+    ${GAME_SERVICE_HEALTH_INTERVAL} \
+    ${GAME_SERVICE_HEALTH_METHOD}
+    ${COMPETITION_SERVICE_CONTEXT_PATH} \
+    ${COMPETITION_SERVICE_HOSTNAME} \
+    ${COMPETITION_SERVICE_PORT} \
+    ${COMPETITION_SERVICE_HEALTH_INTERVAL} \
+    ${COMPETITION_SERVICE_HEALTH_METHOD}' \
     < /envoy.yaml.template > /etc/envoy/envoy.yaml
 
-# Make the config readable
+# Make sure the config readable
 chmod +r /etc/envoy/envoy.yaml
 
 # Start envoy

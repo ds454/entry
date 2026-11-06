@@ -65,8 +65,14 @@ static_resources:
                   prefix: ${AUTH_SERVICE_CONTEXT_PATH}
                 route:
                   cluster: auth_service
+                  
+              - match:
+                  prefix: ${COMPETITION_SERVICE_CONTEXT_PATH}
+                route:
+                  cluster: competition_service
 
           http_filters:
+          # Send all requests to the auth service, which implements the auth check...
           - name: envoy.filters.http.ext_authz
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
@@ -75,15 +81,15 @@ static_resources:
                 envoy_grpc:
                   cluster_name: auth_service
                 timeout: 0.5s
-              # Failed requests don't continue
+              # (if auth fails, requests should not continue into the backend)
               failure_mode_allow: false
               status_on_error:
                 code: ServiceUnavailable
               allowed_headers:
                 patterns:
-                - exact: ${AUTH_SESSION_TOKEN_HEADER_KEY}
+                - exact: ${AUTH_SERVICE_SESSION_TOKEN_HEADER_KEY}
 
-          # Then they get passed to the backend
+          # ...then pass them to the backend
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -125,7 +131,7 @@ static_resources:
     # Health check frequency is configurable. Dev and prod will have a lower interval to be more reactive, while local-dev will have a higher interval to avoid nuking our laptops.
     health_checks:
     - timeout: 1s
-      interval: ${AUTH_HEALTH_INTERVAL}
+      interval: ${AUTH_SERVICE_HEALTH_INTERVAL}
       # After a pod fails a health check twice, it is considered unhealthy and requests aren't routed to it anymore
       unhealthy_threshold: 2
       healthy_threshold: 1
@@ -153,7 +159,7 @@ static_resources:
                 port_value: ${USER_SERVICE_PORT}
     health_checks:
     - timeout: 5s
-      interval: ${USER_HEALTH_INTERVAL}
+      interval: ${USER_SERVICE_HEALTH_INTERVAL}
       unhealthy_threshold: 2
       healthy_threshold: 1
       ${USER_SERVICE_HEALTH_METHOD}_health_check: {}
@@ -180,7 +186,34 @@ static_resources:
                 port_value: ${GAME_SERVICE_PORT}
     health_checks:
     - timeout: 5s
-      interval: ${GAME_HEALTH_INTERVAL}
+      interval: ${GAME_SERVICE_HEALTH_INTERVAL}
       unhealthy_threshold: 2
       healthy_threshold: 1
       ${GAME_SERVICE_HEALTH_METHOD}_health_check: {}
+
+  # Competition Service
+  - name: competition_service
+    type: STRICT_DNS
+    dns_lookup_family: V4_ONLY
+    connect_timeout: 5s
+    lb_policy: LEAST_REQUEST
+    typed_extension_protocol_options:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicit_http_config:
+          http2_protocol_options: {}
+    load_assignment:
+      cluster_name: competition_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: ${COMPETITION_SERVICE_HOSTNAME}
+                port_value: ${COMPETITION_SERVICE_PORT}
+    health_checks:
+    - timeout: 5s
+      interval: ${COMPETITION_SERVICE_HEALTH_INTERVAL}
+      unhealthy_threshold: 2
+      healthy_threshold: 1
+      ${COMPETITION_HEALTH_METHOD}_health_check: {}
