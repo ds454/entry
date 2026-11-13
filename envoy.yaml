@@ -25,9 +25,9 @@ static_resources:
               domains: ["*"]
               routes:
 
-              # Logging in skips authentication
+              # Pings skip authentication
               - match:
-                  path: "${AUTH_SERVICE_LOGIN_CONTEXT}${AUTH_SERVICE_LOGIN_PATH}"
+                  path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_PING_PATH}"
                 route:
                   cluster: auth_service
                   timeout: 1s
@@ -39,9 +39,22 @@ static_resources:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
                     disabled: true
 
+              # Logging in skips authentication
+              - match:
+                  path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SERVICE_LOGIN_PATH}"
+                route:
+                  cluster: auth_service
+                  timeout: 1s
+                  max_stream_duration:
+                    grpc_timeout_header_max: 0s
+                typed_per_filter_config:
+                  envoy.filters.http.ext_authz:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                    disabled: true
+
               # Registration skips authentication
               - match:
-                  path: "${USER_SERVICE_REGISTRATION_CONTEXT}${USER_SERVICE_REGISTER_PATH}"
+                  path: "${USER_SERVICE_REGISTER_CONTEXT}${USER_SERVICE_REGISTER_PATH}"
                 route:
                   cluster: user_service
                 typed_per_filter_config:
@@ -149,7 +162,7 @@ static_resources:
         explicit_http_config:
           http2_protocol_options: {}
     load_assignment:
-      cluster_name: auth_service
+      cluster_name: user_service
       endpoints:
       - lb_endpoints:
         - endpoint:
