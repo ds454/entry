@@ -15,6 +15,28 @@ static_resources:
           stat_prefix: grpc_ingress
           codec_type: AUTO
 
+          access_log:
+          - name: envoy.access_loggers.stdout
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+              log_format:
+                json_format:
+                  time: "%START_TIME%"
+                  request_id: "%REQ(X-REQUEST-ID)%"
+                  method: "%REQ(:METHOD)%"
+                  path: "%REQ(:PATH)%"          # e.g. /my.package.Service/Method
+                  authority: "%REQ(:AUTHORITY)%"
+                  protocol: "%PROTOCOL%"
+                  http_status: "%RESPONSE_CODE%"
+                  grpc_status: "%GRPC_STATUS%"
+                  response_flags: "%RESPONSE_FLAGS%"
+                  duration_ms: "%DURATION%"
+                  bytes_in: "%BYTES_RECEIVED%"
+                  bytes_out: "%BYTES_SENT%"
+                  upstream_cluster: "%UPSTREAM_CLUSTER%"
+                  upstream_host: "%UPSTREAM_HOST%"
+                  user_agent: "%REQ(USER-AGENT)%"
+
           # Close streams that send nothing for 5 minutes
           stream_idle_timeout: 300s
 
