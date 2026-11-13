@@ -27,7 +27,7 @@ static_resources:
 
               # Logging in skips authentication
               - match:
-                  path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SERVICE_LOGIN_PATH}"
+                  path: "${AUTH_SERVICE_LOGIN_CONTEXT}${AUTH_SERVICE_LOGIN_PATH}"
                 route:
                   cluster: auth_service
                   timeout: 1s
@@ -41,7 +41,7 @@ static_resources:
 
               # Registration skips authentication
               - match:
-                  path: "${USER_SERVICE_CONTEXT_PATH}${USER_SERVICE_REGISTER_PATH}"
+                  path: "${USER_SERVICE_REGISTRATION_CONTEXT}${USER_SERVICE_REGISTER_PATH}"
                 route:
                   cluster: user_service
                 typed_per_filter_config:
