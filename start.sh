@@ -6,6 +6,7 @@ set -eu
 # Check to make sure all required environment variables are set
 : "${ENTRY_PORT:?Required env variable ENTRY_PORT is missing}"
 : "${AUTH_PING_PATH:?Required env variable AUTH_PING_PATH is missing}"
+: "${AUTH_SESSION_IS_VALID_PATH:?Required env variable AUTH_SESSION_IS_VALID_PATH is missing}"
 : "${AUTH_SERVICE_LOGIN_PATH:?Required env variable AUTH_SERVICE_LOGIN_PATH is missing}"
 : "${AUTH_SERVICE_CONTEXT_PATH:?Required env variable AUTH_SERVICE_CONTEXT_PATH is missing}"
 : "${AUTH_SERVICE_HOSTNAME:?Required env variable AUTH_SERVICE_HOSTNAME is missing}"
@@ -38,6 +39,7 @@ rm -f /etc/envoy/envoy.yaml
 envsubst '\
     ${ENTRY_PORT} \
     ${AUTH_PING_PATH} \
+    ${AUTH_SESSION_IS_VALID_PATH} \
     ${AUTH_SERVICE_CONTEXT_PATH} \
     ${AUTH_SERVICE_HOSTNAME} \
     ${AUTH_SERVICE_PORT} \

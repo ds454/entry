@@ -24,7 +24,7 @@ static_resources:
                   time: "%START_TIME%"
                   request_id: "%REQ(X-REQUEST-ID)%"
                   method: "%REQ(:METHOD)%"
-                  path: "%REQ(:PATH)%"          # e.g. /my.package.Service/Method
+                  path: "%REQ(:PATH)%"
                   authority: "%REQ(:AUTHORITY)%"
                   protocol: "%PROTOCOL%"
                   http_status: "%RESPONSE_CODE%"
@@ -52,10 +52,17 @@ static_resources:
                   path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_PING_PATH}"
                 route:
                   cluster: auth_service
-                  timeout: 1s
-                  max_stream_duration:
-                    grpc_timeout_header_max: 0s
                 # This skips the authentication step
+                typed_per_filter_config:
+                  envoy.filters.http.ext_authz:
+                    "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                    disabled: true
+
+              # Pings skip authentication
+              - match:
+                  path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SESSION_IS_VALID_PATH}"
+                route:
+                  cluster: auth_service
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
@@ -66,9 +73,6 @@ static_resources:
                   path: "${AUTH_SERVICE_CONTEXT_PATH}${AUTH_SERVICE_LOGIN_PATH}"
                 route:
                   cluster: auth_service
-                  timeout: 1s
-                  max_stream_duration:
-                    grpc_timeout_header_max: 0s
                 typed_per_filter_config:
                   envoy.filters.http.ext_authz:
                     "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
@@ -115,7 +119,6 @@ static_resources:
               grpc_service:
                 envoy_grpc:
                   cluster_name: auth_service
-                timeout: 0.5s
               # (if auth fails, requests should not continue into the backend)
               failure_mode_allow: false
               status_on_error:
